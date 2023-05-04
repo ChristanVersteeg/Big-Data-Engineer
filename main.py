@@ -8,11 +8,19 @@ import pandas as pd
 import csv
 import random
 
+#Reviews:
+#This hotel was a damn mess. The bed sheets weren't made, the food was horrid and the staff wasn't helpful nor nice. I would not recommend.
+
+#This is your everyday average hotel, not bad, not good, reasonably priced. All in all, rather happy with how it turned out.
+
+#Man this hotel was so damn amazing, and it wasn't even that expensive! It's surprising how nice the staff is, how clean the rooms are, and above all, how tasty the damn food is. I would highly recommend anyone in the proximity to go check this hotel out!
+
+
 # Load the CSV file into a pandas dataframe
 df = pd.read_csv("Hotel_Reviews.csv")
 
 # View the first few rows of the dataframe
-print(df.head())
+df.info()
 
 # Replace this URL with the one you want to scrape reviews from
 url = 'https://www.tripadvisor.com/Hotels-g187147-Paris_Ile_de_France-Hotels.html'
