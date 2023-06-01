@@ -7,66 +7,57 @@ import time
 import pandas as pd
 import csv
 import random
+from enum import Enum
 
-#Reviews:
-#This hotel was a damn mess. The bed sheets weren't made, the food was horrid and the staff wasn't helpful nor nice. I would not recommend.
-
-#This is your everyday average hotel, not bad, not good, reasonably priced. All in all, rather happy with how it turned out.
-
-#Man this hotel was so damn amazing, and it wasn't even that expensive! It's surprising how nice the staff is, how clean the rooms are, and above all, how tasty the damn food is. I would highly recommend anyone in the proximity to go check this hotel out!
-
-
-# Load the CSV file into a pandas dataframe
-df = pd.read_csv("Hotel_Reviews.csv")
-
-# View the first few rows of the dataframe
-df.info()
-
-# Replace this URL with the one you want to scrape reviews from
-url = 'https://www.tripadvisor.com/Hotels-g187147-Paris_Ile_de_France-Hotels.html'
-
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36'
-}
-
-def get_review_data(url):
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        print(f"An error occurred while fetching the URL: {e}")
-        return []
-
-    soup = BeautifulSoup(response.text, 'html.parser')
+class Type(Enum):
+    CUSTOM  = 1
+    CSV     = 2     
+    SCRAPED = 3
     
-    # Replace the CSS selector with the appropriate one for the website you're scraping
-    reviews = soup.select('.ghulh')
+class Sentiment(Enum):
+    NULL     = 1
+    POSITIVE = 2     
+    NEUTRAL  = 3
+    NEGATIVE = 4
     
-    return [review.get_text() for review in reviews]
+custom_reviews = {Type:[Type.CUSTOM, Type.CUSTOM, Type.CUSTOM],
+        'Review':[
+            "This hotel was a damn mess. The bed sheets weren't made, the food was horrid and the staff wasn't helpful nor nice. I would not recommend.", 
+            "This is your everyday average hotel, not bad, not good, reasonably priced. All in all, rather happy with how it turned out", 
+            "Man this hotel was so damn amazing, and it wasn't even that expensive! It's surprising how nice the staff is, how clean the rooms are, and above all, how tasty the damn food is. I would highly recommend anyone in the proximity to go check this hotel out!"],
+        Sentiment:[Sentiment.NULL, Sentiment.NULL, Sentiment.NULL]
+        }
 
-def classify_review_sentiment(review_text):
+csv_reviews = pd.read_csv("Hotel_Reviews.csv")
+csv_reviews = pd.concat([csv_reviews['Positive_Review'], csv_reviews['Negative_Review']], axis=0)
+
+url = 'https://www.scrapethissite.com/pages/simple/'
+response = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+
+soup = BeautifulSoup(response.text, 'html.parser')
+scraped_reviews = soup.find_all("div", attrs={"class":"country-info"})
+
+reviews_text = []
+for review in scraped_reviews:
+    text = review.get_text(strip=True)
+    print(text)
+    reviews_text.append(text)
+
+print(reviews_text)
+
+all_reviews = pd.DataFrame(custom_reviews, csv_reviews, scraped_reviews)
+
+for index, row in all_reviews.iterrows():
+    review_text = row['Review']
     analysis = TextBlob(review_text)
-    if analysis.sentiment.polarity > 0:
-        return 'positive'
-    elif analysis.sentiment.polarity < 0:
-        return 'negative'
-    else:
-        return 'neutral'
-
-def main():
-    review_texts = get_review_data(url)
     
-    if not review_texts:
-        print("No reviews found.")
-        return
+    if analysis.sentiment.polarity > 0:
+        sentiment = Sentiment.POSITIVE
+    elif analysis.sentiment.polarity < 0:
+        sentiment = Sentiment.NEGATIVE
+    else:
+        sentiment = Sentiment.NEUTRAL
+    
+    all_reviews.at[index, 'Sentiment'] = sentiment
 
-    classified_reviews = [(review, classify_review_sentiment(review)) for review in review_texts]
-
-    for review, sentiment in classified_reviews:
-        print(f"Review: {review.strip()}\nSentiment: {sentiment}\n")
-
-    # Introduce a delay between requests to avoid overwhelming the server or getting blocked
-    time.sleep(random.uniform(1, 3))
-
-if __name__ == '__main__':
-    main()
+print(all_reviews)
