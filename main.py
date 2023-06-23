@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 from textblob import TextBlob
 import time
 import pandas as pd
-import csv
 import random
 from enum import Enum
 import sys; sys.stdout.reconfigure(encoding='utf-8') #Set the encoding for standard output to UTF-8, to prevent UnicodeEncodeError(s)
@@ -21,16 +20,24 @@ class Sentiment(Enum):
     NEUTRAL  = 3
     NEGATIVE = 4
     
-custom_reviews = {Type:[Type.CUSTOM, Type.CUSTOM, Type.CUSTOM],
+custom_reviews = {
+        Type:[Type.CUSTOM, Type.CUSTOM, Type.CUSTOM],
         'Review':[
             "This hotel was a damn mess. The bed sheets weren't made, the food was horrid and the staff wasn't helpful nor nice. I would not recommend.", 
             "This is your everyday average hotel, not bad, not good, reasonably priced. All in all, rather happy with how it turned out", 
             "Man this hotel was so damn amazing, and it wasn't even that expensive! It's surprising how nice the staff is, how clean the rooms are, and above all, how tasty the damn food is. I would highly recommend anyone in the proximity to go check this hotel out!"],
-        Sentiment:[Sentiment.NULL, Sentiment.NULL, Sentiment.NULL]
-        }
+        Sentiment:[Sentiment.NULL, Sentiment.NULL, Sentiment.NULL]}
 
-csv_reviews = pd.read_csv("Hotel_Reviews.csv")
-csv_reviews = pd.concat([csv_reviews['Positive_Review'], csv_reviews['Negative_Review']], axis=0)
+csv = pd.read_csv("Hotel_Reviews.csv")
+csv_concat = pd.concat([csv['Positive_Review'], csv['Negative_Review']], axis=0)
+num_reviews = len(csv_concat)
+
+csv_reviews = {
+        Type:[Type.CSV] * num_reviews,
+        'Review': csv_concat,
+        Sentiment:[Sentiment.NULL] * num_reviews}
+
+pd.DataFrame(csv_reviews).head()
 
 url = 'https://www.scrapethissite.com/pages/simple/'
 response = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
