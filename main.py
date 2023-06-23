@@ -7,7 +7,9 @@ import time
 import pandas as pd
 import random
 from enum import Enum
-import sys; sys.stdout.reconfigure(encoding='utf-8') #Set the encoding for standard output to UTF-8, to prevent UnicodeEncodeError(s)
+
+import sys #Set the encoding for standard output to UTF-8, to prevent UnicodeEncodeError(s)
+if not sys.stdout.encoding or sys.stdout.encoding.lower() != 'utf-8': sys.stdout.reconfigure(encoding='utf-8')
 
 class Type(Enum):
     CUSTOM  = 1
@@ -37,8 +39,6 @@ csv_reviews = {
         'Review': csv_concat,
         Sentiment:[Sentiment.NULL] * num_reviews}
 
-pd.DataFrame(csv_reviews).head()
-
 url = 'https://www.scrapethissite.com/pages/simple/'
 response = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
 
@@ -67,5 +67,3 @@ all_reviews = pd.DataFrame(custom_reviews, csv_reviews, scraped_reviews)
 #        sentiment = Sentiment.NEUTRAL
 #    
 #    all_reviews.at[index, 'Sentiment'] = sentiment
-
-print(all_reviews)
