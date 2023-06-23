@@ -8,6 +8,7 @@ import pandas as pd
 import csv
 import random
 from enum import Enum
+import sys; sys.stdout.reconfigure(encoding='utf-8') #Set the encoding for standard output to UTF-8, to prevent UnicodeEncodeError(s)
 
 class Type(Enum):
     CUSTOM  = 1
@@ -47,17 +48,17 @@ print(reviews_text)
 
 all_reviews = pd.DataFrame(custom_reviews, csv_reviews, scraped_reviews)
 
-for index, row in all_reviews.iterrows():
-    review_text = row['Review']
-    analysis = TextBlob(review_text)
-    
-    if analysis.sentiment.polarity > 0:
-        sentiment = Sentiment.POSITIVE
-    elif analysis.sentiment.polarity < 0:
-        sentiment = Sentiment.NEGATIVE
-    else:
-        sentiment = Sentiment.NEUTRAL
-    
-    all_reviews.at[index, 'Sentiment'] = sentiment
+#for index, row in all_reviews.iterrows():
+#    review_text = row['Review']
+#    analysis = TextBlob(review_text)
+#    
+#    if analysis.sentiment.polarity > 0:
+#        sentiment = Sentiment.POSITIVE
+#    elif analysis.sentiment.polarity < 0:
+#        sentiment = Sentiment.NEGATIVE
+#    else:
+#        sentiment = Sentiment.NEUTRAL
+#    
+#    all_reviews.at[index, 'Sentiment'] = sentiment
 
 print(all_reviews)
