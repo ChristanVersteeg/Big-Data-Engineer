@@ -1,4 +1,4 @@
-#Assignment: https://dlo.mijnhva.nl/d2l/lms/dropbox/user/folder_submit_files.d2l?db=207186&grpid=0&isprv=0&bp=0&ou=471098
+#Assignment: https://dlo.mijnhva.nl/d2l/lms/dropbox/user/folder_submit_files.d2l?db=249019&grpid=0&isprv=0&bp=0&ou=540323
 #Assignment Guide: file:///C:/Users/Christan/Desktop/Big-Data-Engineer/Big%20Data%20Scientist%20and%20Engineer%20Individual%20Assignment%201-old%20program.pdf
 import requests
 from bs4 import BeautifulSoup
@@ -7,6 +7,7 @@ import time
 import pandas as pd
 import random
 from enum import Enum
+from sqlalchemy import create_engine
 
 import sys #Set the encoding for standard output to UTF-8, to prevent UnicodeEncodeError(s)
 if not sys.stdout.encoding or sys.stdout.encoding.lower() != 'utf-8': sys.stdout.reconfigure(encoding='utf-8')
@@ -54,6 +55,12 @@ for review in scraped_reviews:
 print(reviews_text)
 
 all_reviews = pd.DataFrame(custom_reviews, csv_reviews, scraped_reviews)
+
+# Create SQL connection engine
+engine = create_engine(f'mysql+pymysql://root:BigData@127.0.0.1:3306/bigdataengineer')
+
+# Store DataFrame in MySQL
+all_reviews.to_sql('table_name', con=engine, if_exists='replace', index=False)
 
 #for index, row in all_reviews.iterrows():
 #    review_text = row['Review']
