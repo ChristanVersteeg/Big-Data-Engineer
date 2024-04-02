@@ -37,7 +37,7 @@ custom_reviews = {
             "Man this hotel was so damn amazing, and it wasn't even that expensive! It's surprising how nice the staff is, how clean the rooms are, and above all, how tasty the damn food is. I would highly recommend anyone in the proximity to go check this hotel out!"],
         Sentiment:[Sentiment.NULL, Sentiment.NULL, Sentiment.NULL]}
 
-csv = pd.read_csv("Hotel_Reviews.csv")
+csv = pd.read_csv("C:/Users/Christan/Desktop/Big-Data-Engineer/Hotel_Reviews.csv")
 csv_concat = pd.concat([csv['Positive_Review'], csv['Negative_Review']], axis=0)
 num_reviews = len(csv_concat)
 
@@ -47,13 +47,13 @@ csv_reviews = {
         Sentiment:[Sentiment.NULL] * num_reviews}
 
 # Set up Chrome options
-chrome_options = Options()
+#chrome_options = Options()
 # Uncomment the next line if you want to run Chrome headless
 # chrome_options.add_argument("--headless")
 
 url = 'https://www.tripadvisor.com/Hotels-g187147-Paris_Ile_de_France-Hotels.html'
 # Set up the driver
-chrome = webdriver.Chrome(options=chrome_options)
+chrome = webdriver.Chrome(executable_path="C:/Users/Christan/Desktop/Big-Data-Engineer/chromedriver.exe")
 
 # The URL you want to open
 
