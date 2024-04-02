@@ -9,6 +9,12 @@ import random
 from enum import Enum
 from sqlalchemy import create_engine
 
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+
 import sys #Set the encoding for standard output to UTF-8, to prevent UnicodeEncodeError(s)
 if not sys.stdout.encoding or sys.stdout.encoding.lower() != 'utf-8': sys.stdout.reconfigure(encoding='utf-8')
 
@@ -40,27 +46,41 @@ csv_reviews = {
         'Review': csv_concat,
         Sentiment:[Sentiment.NULL] * num_reviews}
 
-url = 'https://www.scrapethissite.com/pages/simple/'
-response = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+# Set up Chrome options
+chrome_options = Options()
+# Uncomment the next line if you want to run Chrome headless
+# chrome_options.add_argument("--headless")
 
-soup = BeautifulSoup(response.text, 'html.parser')
-scraped_reviews = soup.find_all("div", attrs={"class":"country-info"})
+url = 'https://www.tripadvisor.com/Hotels-g187147-Paris_Ile_de_France-Hotels.html'
+# Set up the driver
+chrome = webdriver.Chrome(options=chrome_options)
 
-reviews_text = []
+# The URL you want to open
+
+# Navigate to the page
+chrome.get(url)
+
+time.sleep(10)
+# Wait for the page to load, or add explicit waits here
+#chrome.implicitly_wait(10)
+
+# Use the provided XPath to retrieve the reviews
+scraped_reviews = chrome.find_elements(By.XPATH, '//*[@id="hotel-listing-2"]/div/div/div[2]/div[2]/div/div[2]/div[1]/div/div/a/span')
+
 for review in scraped_reviews:
-    text = review.get_text(strip=True)
-    print(text)
-    reviews_text.append(text)
+    print(review.text)  # Print the text of each review element found
 
-print(reviews_text)
+# Close the driver
+chrome.quit()
+
 
 all_reviews = pd.DataFrame(custom_reviews, csv_reviews, scraped_reviews)
 
 # Create SQL connection engine
-engine = create_engine(f'mysql+pymysql://root:BigData@127.0.0.1:3306/bigdataengineer')
+#engine = create_engine(f'mysql+pymysql://root:BigData@127.0.0.1:3306/bigdataengineer')
 
 # Store DataFrame in MySQL
-all_reviews.to_sql('table_name', con=engine, if_exists='replace', index=False)
+#all_reviews.to_sql('table_name', con=engine, if_exists='replace', index=False)
 
 #for index, row in all_reviews.iterrows():
 #    review_text = row['Review']
