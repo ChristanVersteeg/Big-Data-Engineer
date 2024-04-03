@@ -50,10 +50,12 @@ csv_reviews = {
 #chrome_options = Options()
 # Uncomment the next line if you want to run Chrome headless
 # chrome_options.add_argument("--headless")
+chrome_options = Options()
+chrome_options.add_extension("C:/Users/Christan/Desktop/Big-Data-Engineer/VPN.crx")
 
 url = 'https://www.tripadvisor.com/Hotels-g187147-Paris_Ile_de_France-Hotels.html'
 # Set up the driver
-chrome = webdriver.Chrome(executable_path="C:/Users/Christan/Desktop/Big-Data-Engineer/chromedriver.exe")
+chrome = webdriver.Chrome(chrome_options=chrome_options, executable_path="C:/Users/Christan/Desktop/Big-Data-Engineer/chromedriver.exe")
 
 # The URL you want to open
 
@@ -63,9 +65,11 @@ chrome.get(url)
 time.sleep(10)
 # Wait for the page to load, or add explicit waits here
 #chrome.implicitly_wait(10)
+soup = BeautifulSoup(chrome.page_source, 'html.parser')
 
 # Use the provided XPath to retrieve the reviews
-scraped_reviews = chrome.find_elements(By.XPATH, '//*[@id="hotel-listing-2"]/div/div/div[2]/div[2]/div/div[2]/div[1]/div/div/a/span')
+#scraped_reviews = chrome.find_elements(By.XPATH, '//*[@id="hotel-listing-2"]/div/div/div[2]/div[2]/div/div[2]/div[1]/div/div/a/span')
+scraped_reviews = soup.find_all(class_='EcHSb')
 
 for review in scraped_reviews:
     print(review.text)  # Print the text of each review element found
