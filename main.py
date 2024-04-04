@@ -20,7 +20,7 @@ if not sys.stdout.encoding or sys.stdout.encoding.lower() != 'utf-8': sys.stdout
 
 class Type(Enum):
     CUSTOM  = 1
-    CSV     = 2     
+    KAGGLE  = 2     
     SCRAPED = 3
     
 class Sentiment(Enum):
@@ -28,50 +28,61 @@ class Sentiment(Enum):
     POSITIVE = 2     
     NEUTRAL  = 3
     NEGATIVE = 4
+
+custom_reviews = pd.DataFrame
+kaggle_reviews = pd.DataFrame
+scraped_reviews = pd.DataFrame
+
+def setup_custom_reviews():
+    global custom_reviews
     
-custom_reviews = {
-        Type:[Type.CUSTOM, Type.CUSTOM, Type.CUSTOM],
-        'Review':[
-            "This hotel was a damn mess. The bed sheets weren't made, the food was horrid and the staff wasn't helpful nor nice. I would not recommend.", 
-            "This is your everyday average hotel, not bad, not good, reasonably priced. All in all, rather happy with how it turned out", 
-            "Man this hotel was so damn amazing, and it wasn't even that expensive! It's surprising how nice the staff is, how clean the rooms are, and above all, how tasty the damn food is. I would highly recommend anyone in the proximity to go check this hotel out!"],
-        Sentiment:[Sentiment.NULL, Sentiment.NULL, Sentiment.NULL]}
+    custom_reviews = {
+            Type:[Type.CUSTOM, Type.CUSTOM, Type.CUSTOM],
+            'Review':[
+                "This hotel was a damn mess. The bed sheets weren't made, the food was horrid and the staff wasn't helpful nor nice. I would not recommend.", 
+                "This is your everyday average hotel, not bad, not good, reasonably priced. All in all, rather happy with how it turned out", 
+                "Man this hotel was so damn amazing, and it wasn't even that expensive! It's surprising how nice the staff is, how clean the rooms are, and above all, how tasty the damn food is. I would highly recommend anyone in the proximity to go check this hotel out!"],
+            Sentiment:[Sentiment.NULL, Sentiment.NULL, Sentiment.NULL]}
+setup_custom_reviews()
 
-csv = pd.read_csv("C:/Users/Christan/Desktop/Big-Data-Engineer/Hotel_Reviews.csv")
-csv_concat = pd.concat([csv['Positive_Review'], csv['Negative_Review']], axis=0)
-num_reviews = len(csv_concat)
+def setup_kaggle_reviews():
+    global kaggle_reviews
+    
+    kaggle_reviews = pd.read_csv("C:/Users/Christan/Desktop/Big-Data-Engineer/Hotel_Reviews.csv")
+    kaggle_concat = pd.concat([kaggle_reviews['Positive_Review'], kaggle_reviews['Negative_Review']], axis=0)
+    
+    num_reviews = len(kaggle_concat)
 
-csv_reviews = {
-        Type:[Type.CSV] * num_reviews,
-        'Review': csv_concat,
-        Sentiment:[Sentiment.NULL] * num_reviews}
+    kaggle_reviews = {
+            Type:[Type.KAGGLE] * num_reviews,
+            'Review': kaggle_concat,
+            Sentiment:[Sentiment.NULL] * num_reviews}
+setup_kaggle_reviews()
 
-chrome_options = Options()
-chrome_options.add_extension("C:/Users/Christan/Desktop/Big-Data-Engineer/VPN.crx")
+def setup_scraped_reviews():
+    global scraped_reviews
+    
+    vpn = Options()
+    vpn.add_extension("C:/Users/Christan/Desktop/Big-Data-Engineer/VPN.crx")
 
-url = 'https://www.tripadvisor.com/Hotels-g187147-Paris_Ile_de_France-Hotels.html'
+    chrome = webdriver.Chrome(options=vpn, service=Service("C:/Users/Christan/Desktop/Big-Data-Engineer/chromedriver.exe"))
+    chrome.get('https://www.tripadvisor.com/Hotels-g187147-Paris_Ile_de_France-Hotels.html')
 
-chrome = webdriver.Chrome(chrome_options=chrome_options, executable_path="C:/Users/Christan/Desktop/Big-Data-Engineer/chromedriver.exe")
+    # 25 seconds of sleep to perform manual actions such as activating the VPN. Yes this could be relatively easily automated, but do not have the time for that.
+    time.sleep(25)
 
-chrome.get(url)
+    soup = BeautifulSoup(chrome.page_source, 'html.parser')
+    scraped_reviews = soup.find_all(class_='EcHSb') # EcHSb is the class name of the reviews.
 
-time.sleep(25)
+    for review in scraped_reviews:
+      print(review.text)  
 
-soup = BeautifulSoup(chrome.page_source, 'html.parser')
+    chrome.quit()
+setup_scraped_reviews()
 
-scraped_reviews = soup.find_all(class_='EcHSb')
+all_reviews = pd.concat(custom_reviews, kaggle_reviews, scraped_reviews)
 
-for review in scraped_reviews:
-    print(review.text)  
-
-chrome.quit()
-
-all_reviews = pd.DataFrame(custom_reviews, csv_reviews, scraped_reviews)
-
-# Create SQL connection engine
 #engine = create_engine(f'mysql+pymysql://root:BigData@127.0.0.1:3306/bigdataengineer')
-
-# Store DataFrame in MySQL
 #all_reviews.to_sql('table_name', con=engine, if_exists='replace', index=False)
 
 #for index, row in all_reviews.iterrows():
