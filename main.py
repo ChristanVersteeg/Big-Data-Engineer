@@ -29,13 +29,7 @@ class Sentiment(Enum):
     NEUTRAL  = 3
     NEGATIVE = 4
 
-custom_reviews = pd.DataFrame
-kaggle_reviews = pd.DataFrame
-scraped_reviews = pd.DataFrame
-
 def setup_custom_reviews():
-    global custom_reviews
-    
     custom_reviews = {
             Type:[Type.CUSTOM, Type.CUSTOM, Type.CUSTOM],
             'Review':[
@@ -43,11 +37,10 @@ def setup_custom_reviews():
                 "This is your everyday average hotel, not bad, not good, reasonably priced. All in all, rather happy with how it turned out", 
                 "Man this hotel was so damn amazing, and it wasn't even that expensive! It's surprising how nice the staff is, how clean the rooms are, and above all, how tasty the damn food is. I would highly recommend anyone in the proximity to go check this hotel out!"],
             Sentiment:[Sentiment.NULL, Sentiment.NULL, Sentiment.NULL]}
-setup_custom_reviews()
+    
+    return custom_reviews
 
 def setup_kaggle_reviews():
-    global kaggle_reviews
-    
     kaggle_reviews = pd.read_csv("C:/Users/Christan/Desktop/Big-Data-Engineer/Hotel_Reviews.csv")
     kaggle_concat = pd.concat([kaggle_reviews['Positive_Review'], kaggle_reviews['Negative_Review']], axis=0)
     
@@ -57,30 +50,42 @@ def setup_kaggle_reviews():
             Type:[Type.KAGGLE] * num_reviews,
             'Review': kaggle_concat,
             Sentiment:[Sentiment.NULL] * num_reviews}
-setup_kaggle_reviews()
+    
+    return kaggle_reviews
 
 def setup_scraped_reviews():
-    global scraped_reviews
-    
     vpn = Options()
     vpn.add_extension("C:/Users/Christan/Desktop/Big-Data-Engineer/VPN.crx")
 
     chrome = webdriver.Chrome(options=vpn, service=Service("C:/Users/Christan/Desktop/Big-Data-Engineer/chromedriver.exe"))
     chrome.get('https://www.tripadvisor.com/Hotels-g187147-Paris_Ile_de_France-Hotels.html')
 
-    # 25 seconds of sleep to perform manual actions such as activating the VPN. Yes this could be relatively easily automated, but do not have the time for that.
+    # 25 seconds of sleep to perform manual actions such as activating the VPN.
     time.sleep(25)
 
     soup = BeautifulSoup(chrome.page_source, 'html.parser')
-    scraped_reviews = soup.find_all(class_='EcHSb') # EcHSb is the class name of the reviews.
+    scraped_reviews = soup.find_all(class_='EcHSb')  # EcHSb is the recurring class name of the reviews on TripAdvisor.
+    
+    scraped_review_texts = [review.text for review in scraped_reviews]
+    num_reviews = len(scraped_review_texts) 
 
-    for review in scraped_reviews:
-      print(review.text)  
+    scraped_reviews = {
+        Type: [Type.SCRAPED] * num_reviews,
+        'Review': scraped_review_texts,
+        Sentiment: [Sentiment.NULL] * num_reviews
+    }
 
     chrome.quit()
-setup_scraped_reviews()
+    
+    return pd.DataFrame(scraped_reviews)
 
-all_reviews = pd.concat(custom_reviews, kaggle_reviews, scraped_reviews)
+all_reviews = pd.concat([
+    pd.DataFrame(setup_custom_reviews()),
+    pd.DataFrame(setup_kaggle_reviews()),
+    pd.DataFrame(setup_scraped_reviews())
+], ignore_index=True)
+
+all_reviews.head()
 
 #engine = create_engine(f'mysql+pymysql://root:BigData@127.0.0.1:3306/bigdataengineer')
 #all_reviews.to_sql('table_name', con=engine, if_exists='replace', index=False)
