@@ -77,7 +77,7 @@ def setup_scraped_reviews():
 
     chrome.quit()
     
-    return pd.DataFrame(scraped_reviews)
+    return scraped_reviews
 
 all_reviews = pd.concat([
     pd.DataFrame(setup_custom_reviews()),
@@ -85,10 +85,8 @@ all_reviews = pd.concat([
     pd.DataFrame(setup_scraped_reviews())
 ], ignore_index=True)
 
-all_reviews.head()
-
-#engine = create_engine(f'mysql+pymysql://root:BigData@127.0.0.1:3306/bigdataengineer')
-#all_reviews.to_sql('table_name', con=engine, if_exists='replace', index=False)
+engine = create_engine(f'mysql+pymysql://root:BigData@127.0.0.1:3306/bigdataengineer')
+all_reviews.to_sql('all_reviews', con=engine, if_exists='replace', index=False)
 
 #for index, row in all_reviews.iterrows():
 #    review_text = row['Review']
