@@ -42,7 +42,8 @@ def setup_custom_reviews():
                 "This is your everyday average hotel, not bad, not good, reasonably priced. All in all, rather happy with how it turned out", 
                 "Man this hotel was so damn amazing, and it wasn't even that expensive! It's surprising how nice the staff is, how clean the rooms are, and above all, how tasty the damn food is. I would highly recommend anyone in the proximity to go check this hotel out!"],
             'TextBlob_Sentiment': [Sentiment.NULL, Sentiment.NULL, Sentiment.NULL],
-            'VADER_Sentiment': [Sentiment.NULL, Sentiment.NULL, Sentiment.NULL]}
+            'VADER_Sentiment': [Sentiment.NULL, Sentiment.NULL, Sentiment.NULL],
+            'Sklearn_Sentiment': [Sentiment.NULL, Sentiment.NULL, Sentiment.NULL]}
     
     return custom_reviews
 
@@ -56,7 +57,8 @@ def setup_kaggle_reviews():
             Type: [Type.KAGGLE] * num_reviews,
             'Review': kaggle_concat,
             'TextBlob_Sentiment': [Sentiment.NULL] * num_reviews,
-            'VADER_Sentiment': [Sentiment.NULL] * num_reviews
+            'VADER_Sentiment': [Sentiment.NULL] * num_reviews,
+            'Sklearn_Sentiment': [Sentiment.NULL] * num_reviews,
               }
     
     return kaggle_reviews
@@ -81,7 +83,8 @@ def setup_scraped_reviews():
         Type: [Type.SCRAPED] * num_reviews,
         'Review': scraped_review_texts,
         'TextBlob_Sentiment': [Sentiment.NULL] * num_reviews,
-        'VADER_Sentiment': [Sentiment.NULL] * num_reviews
+        'VADER_Sentiment': [Sentiment.NULL] * num_reviews,
+        'Sklearn_Sentiment': [Sentiment.NULL] * num_reviews
     }
 
     chrome.quit()
