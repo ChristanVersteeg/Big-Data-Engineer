@@ -91,7 +91,7 @@ def setup_scraped_reviews():
 all_reviews = pd.concat([
     pd.DataFrame(setup_custom_reviews()),
     pd.DataFrame(setup_kaggle_reviews()),
-    #pd.DataFrame(setup_scraped_reviews())
+    pd.DataFrame(setup_scraped_reviews())
 ], ignore_index=True)
 
 def get_text_blob_sentiment(text):
@@ -118,7 +118,6 @@ all_reviews['VADER_Sentiment'] = all_reviews['Review'].apply(get_vader_sentiment
 
 def train_naive_bayes_classifier():
     kaggle_reviews_data = pd.read_csv("C:/Users/Christan/Desktop/Big-Data-Engineer/Hotel_Reviews.csv")
-    # Prepare positive and negative reviews
     positive_reviews = pd.DataFrame({
         'Review': kaggle_reviews_data['Positive_Review'],
         'Sentiment': 'POSITIVE'
@@ -128,21 +127,16 @@ def train_naive_bayes_classifier():
         'Sentiment': 'NEGATIVE'
     })
 
-    # Exclude placeholder reviews that do not contain actual content
     positive_reviews = positive_reviews[positive_reviews['Review'] != 'No Positive']
     negative_reviews = negative_reviews[negative_reviews['Review'] != 'No Negative']
 
-    # Combine and shuffle the datasets
     reviews_df = pd.concat([positive_reviews, negative_reviews], ignore_index=True).sample(frac=1, random_state=42)
 
-    # Split the data
     X_train, X_test, y_train, y_test = train_test_split(reviews_df['Review'], reviews_df['Sentiment'], test_size=0.2, random_state=42)
 
-    # Create a pipeline and train the model
     model = make_pipeline(CountVectorizer(stop_words='english'), MultinomialNB())
     model.fit(X_train, y_train)
 
-    # Evaluate the model
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
     print(f"Naive Bayes Classifier Accuracy: {accuracy * 100:.2f}%")
