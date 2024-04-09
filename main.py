@@ -10,7 +10,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
-import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 from textblob import TextBlob
 
@@ -120,7 +119,10 @@ def get_vader_sentiment(text):
 all_reviews['VADER_Sentiment'] = all_reviews['Review'].apply(get_vader_sentiment)
 
 def train_naive_bayes_classifier():
+    kaggle_reviews_data = pd.read_sql(f"CALL GetReviews({int(True)});", con=engine)
+    print(kaggle_reviews_data)
     kaggle_reviews_data = pd.read_csv("C:/Users/Christan/Desktop/Big-Data-Engineer/Hotel_Reviews.csv")
+    
     positive_reviews = pd.DataFrame({
         'Review': kaggle_reviews_data['Positive_Review'],
         'Sentiment': 'POSITIVE'
@@ -145,8 +147,9 @@ def train_naive_bayes_classifier():
     print(f"Naive Bayes Classifier Accuracy: {accuracy * 100:.2f}%")
 
     return model
+engine = create_engine(f'mysql+pymysql://root:BigData@127.0.0.1:3306/bigdataengineer')
+
 nb_model = train_naive_bayes_classifier()
 all_reviews['Sklearn_Sentiment'] = nb_model.predict(all_reviews['Review'])
     
-engine = create_engine(f'mysql+pymysql://root:BigData@127.0.0.1:3306/bigdataengineer')
 all_reviews.to_sql('all_reviews', con=engine, if_exists='replace', index=False)
