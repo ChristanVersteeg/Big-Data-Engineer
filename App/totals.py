@@ -1,5 +1,4 @@
 import col
-import matplotlib.pyplot as plt
 import data 
 import streamlit as st
 
@@ -10,7 +9,7 @@ total_reviews = data.df.shape[0]
 average_rating = data.df[col.REVIEWER_SCORE].mean()
 
 def draw():
-    st.markdown("""
+    st.html("""
     <style>
     .metric-box {
         background-color: #1e1e1e;
@@ -30,18 +29,12 @@ def draw():
         font-weight: bold;
     }
     </style>
-""", unsafe_allow_html=True)
+    """)
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown(
-            f'<div class="metric-box"><p>Number of Reviews</p><h1>{total_reviews}</h1></div>',
-            unsafe_allow_html=True
-        )
+        st.html(f'<div class="metric-box"><p>Number of Reviews</p><h1>{total_reviews}</h1></div>')
 
     with col2:
-        st.markdown(
-            f'<div class="metric-box"><p>Average Rating Given</p><h1>{average_rating:.2f}</h1></div>',
-            unsafe_allow_html=True
-        )
+        st.html(f'<div class="metric-box"><p>Average Rating Given</p><h1>{average_rating:.2f}</h1></div>')
