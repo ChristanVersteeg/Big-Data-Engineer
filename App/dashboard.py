@@ -14,4 +14,5 @@ selected_columns = st.sidebar.multiselect("", data.df.columns.tolist(), default=
 st.dataframe(data.df[selected_columns])
 
 totals.draw()
-piechart.draw()
+piechart.draw_positive_negative()
+piechart.draw_score_distribution()
