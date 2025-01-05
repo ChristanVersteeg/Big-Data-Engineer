@@ -4,6 +4,7 @@ import col
 import data
 import totals
 import piechart
+import wordclouds
 
 
 st.title("Hotel Reviews Data Dashboard")
@@ -16,3 +17,4 @@ st.dataframe(data.df[selected_columns])
 totals.draw()
 piechart.draw_positive_negative()
 piechart.draw_score_distribution()
+wordclouds.draw()
