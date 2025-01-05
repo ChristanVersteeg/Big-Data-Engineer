@@ -1,10 +1,14 @@
-from pymongo import MongoClient 
+from pymongo import MongoClient
 import pandas as pd
-import col
 
-client = MongoClient("localhost", 27017)
-db = client['Big']
-collection = db['Data']
+db_driven = False
 
-# 700000
-df = pd.DataFrame(list(collection.find().limit(10000)))
+if db_driven:
+    client = MongoClient("localhost", 27017)
+    db = client['Big']
+    collection = db['Data']
+    
+    df = pd.DataFrame(list(collection.find().limit(10000)))
+else:
+    csv_file = r"C:\Users\pooti\Desktop\Big-Data-Engineer\App\Hotel_Reviews.csv"
+    df = pd.read_csv(csv_file)
