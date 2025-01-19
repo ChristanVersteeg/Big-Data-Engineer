@@ -4,22 +4,12 @@ from torch.utils.data import DataLoader, Dataset
 from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
-import re
-import col
-import data
 
-df = data.df
-df['Sentiment'] = np.where(df[col.NEGATIVE_REVIEW].str.strip() == 'No Negative', 1, 0)
-df['Review'] = df[col.POSITIVE_REVIEW] + " " + df[col.NEGATIVE_REVIEW]
-df = df[['Review', 'Sentiment']].dropna()
+import kerch
 
-def clean_text(text):
-    text = text.lower()
-    text = re.sub(r"[^a-zA-Z0-9\s]", "", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+df = kerch.isolate_sentiment_columns()
 
-df['Review'] = df['Review'].apply(clean_text)
+df['Review'] = df['Review'].apply(kerch.clean_text)
 
 word_to_idx = {"<PAD>": 0, "<UNK>": 1}
 idx_to_word = {0: "<PAD>", 1: "<UNK>"}
@@ -132,7 +122,7 @@ for epoch in range(NUM_EPOCHS):
 def predict_sentiment(text):
     model.eval()
     with torch.no_grad():
-        tokens = tokenize(clean_text(text))
+        tokens = tokenize(kerch.clean_text(text))
         padded_tokens = pad_sequence(tokens, MAX_LEN)
         input_tensor = torch.tensor(padded_tokens, dtype=torch.long).unsqueeze(0).to(device)
         prediction = model(input_tensor).item()
