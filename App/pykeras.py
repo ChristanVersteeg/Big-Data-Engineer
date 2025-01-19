@@ -1,9 +1,3 @@
-"""
-Trains a simple sentiment analysis model using Keras on hotel reviews.
-Assumes `data.df` is a pandas DataFrame loaded elsewhere, and `col` contains
-the column constants. Uses an LSTM-based model to classify reviews.
-"""
-
 import numpy as np
 from sklearn.model_selection import train_test_split
 
