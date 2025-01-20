@@ -1,6 +1,3 @@
-import numpy as np
-from sklearn.model_selection import train_test_split
-
 import tensorflow as tf
 from keras_preprocessing.text import Tokenizer
 from keras_preprocessing.sequence import pad_sequences
@@ -9,39 +6,26 @@ from keras import layers
 import kerch
 
 df = kerch.isolate_sentiment_columns()
-
 df['Review'] = df['Review'].apply(kerch.clean_text)
-
-def seperate_training_testing():
-    train_data, test_data = train_test_split(df, test_size=0.2, random_state=42)
-    train_reviews = train_data['Review'].tolist()
-    train_labels = np.array(train_data['Sentiment'].tolist())
-    test_reviews = test_data['Review'].tolist()
-    test_labels = np.array(test_data['Sentiment'].tolist())
-    
-    return train_reviews, train_labels, test_reviews, test_labels
-train_reviews, train_labels, test_reviews, test_labels = seperate_training_testing()
+train_reviews, train_labels, test_reviews, test_labels = kerch.separate_training_testing(df)
 
 def tokenize():
-    max_vocab_size = 10000
-    max_len = 100
-
-    tokenizer = Tokenizer(num_words=max_vocab_size, oov_token="<UNK>")
+    tokenizer = Tokenizer(num_words=kerch.MAX_VOCAB_SIZE, oov_token=kerch.UNK)
     tokenizer.fit_on_texts(train_reviews)
 
     train_sequences = tokenizer.texts_to_sequences(train_reviews)
     test_sequences = tokenizer.texts_to_sequences(test_reviews)
 
-    train_padded = pad_sequences(train_sequences, maxlen=max_len, padding='post', truncating='post')
-    test_padded  = pad_sequences(test_sequences, maxlen=max_len, padding='post', truncating='post')
-    return max_vocab_size, max_len, tokenizer, train_padded, test_padded
-max_vocab_size, max_len, tokenizer, train_padded, test_padded = tokenize()
+    train_padded = pad_sequences(train_sequences, maxlen=kerch.MAX_LEN, padding='post', truncating='post')
+    test_padded  = pad_sequences(test_sequences, maxlen=kerch.MAX_LEN, padding='post', truncating='post')
+    return tokenizer, train_padded, test_padded
+tokenizer, train_padded, test_padded = tokenize()
 
 def build_model():
     embed_dim = 64
     hidden_dim = 128
     model = tf.keras.Sequential([
-        layers.Embedding(input_dim=max_vocab_size, output_dim=embed_dim, input_length=max_len),
+        layers.Embedding(input_dim=kerch.MAX_VOCAB_SIZE, output_dim=embed_dim, input_length=kerch.MAX_LEN),
         layers.LSTM(hidden_dim),
         layers.Dense(1, activation='sigmoid')
     ])
@@ -78,7 +62,7 @@ def prediction():
     def predict_sentiment(text):
         text_cleaned = kerch.clean_text(text)
         seq = tokenizer.texts_to_sequences([text_cleaned])
-        padded = pad_sequences(seq, maxlen=max_len, padding='post', truncating='post')
+        padded = pad_sequences(seq, maxlen=kerch.MAX_LEN, padding='post', truncating='post')
         prediction = model.predict(padded)[0][0]
         return "Positive" if prediction > 0.5 else "Negative"
 

@@ -1,75 +1,90 @@
-import re
 import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
 
 import kerch
 
 df = kerch.isolate_sentiment_columns()
 df['Review'] = df['Review'].apply(kerch.clean_text)
+train_reviews, train_labels, test_reviews, test_labels = kerch.separate_training_testing(df)
 
-def separate_training_testing():
-    train_data, test_data = train_test_split(df, test_size=0.2, random_state=42)
-    train_reviews = train_data['Review'].tolist()
-    train_labels = np.array(train_data['Sentiment'].tolist())
-    test_reviews = test_data['Review'].tolist()
-    test_labels = np.array(test_data['Sentiment'].tolist())
-    return train_reviews, train_labels, test_reviews, test_labels
-train_reviews, train_labels, test_reviews, test_labels = separate_training_testing()
+word_to_idx = {kerch.PAD: 0, kerch.UNK: 1}
 
-# ---------------------------------------
-# 3. BUILD VOCABULARY, TOKENIZE, PAD
-# ---------------------------------------
-word_to_idx = {"<PAD>": 0, "<UNK>": 1}
-
-def build_vocabulary(reviews, max_vocab_size=10000):
+def build_vocabulary(reviews):
     word_counts = {}
-    for review in reviews:
-        for word in review.split():
+    for text in reviews:
+        for word in text.split():
             word_counts[word] = word_counts.get(word, 0) + 1
-    # Sort by frequency (descending)
+
     sorted_words = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)
-    # Populate word_to_idx with top words
     idx = 2
-    for word, _ in sorted_words[: max_vocab_size - 2]:
+    for word, _ in sorted_words[: kerch.MAX_VOCAB_SIZE - 2]:
         word_to_idx[word] = idx
         idx += 1
 
 def tokenize(text):
-    return [word_to_idx.get(word, word_to_idx["<UNK>"]) for word in text.split()]
+    return [word_to_idx.get(word, word_to_idx[kerch.UNK]) for word in text.split()]
 
-def pad_sequence(tokens, max_len):
-    if len(tokens) < max_len:
-        return tokens + [word_to_idx["<PAD>"]] * (max_len - len(tokens))
+def pad_sequence(tokens):
+    if len(tokens) < kerch.MAX_LEN:
+        return tokens + [word_to_idx[kerch.PAD]] * (kerch.MAX_LEN - len(tokens))
     else:
-        return tokens[:max_len]
+        return tokens[:kerch.MAX_LEN]
 
-# Tokenization parameters
-max_vocab_size = 10000
-max_len = 100
+def tokenize_pytorch():
+    build_vocabulary(train_reviews)
 
-# Build vocab on training reviews only
-build_vocabulary(train_reviews, max_vocab_size=max_vocab_size)
+    train_sequences = [tokenize(review) for review in train_reviews]
+    test_sequences  = [tokenize(review) for review in test_reviews]
 
-# Convert reviews to padded sequences
-def convert_to_padded_sequences(reviews, labels):
-    tokenized = [tokenize(review) for review in reviews]
-    padded = [pad_sequence(seq, max_len) for seq in tokenized]
-    padded = np.array(padded, dtype=np.int64)
-    labels = np.array(labels, dtype=np.float32)
-    return padded, labels
+    train_padded = [pad_sequence(seq) for seq in train_sequences]
+    test_padded  = [pad_sequence(seq) for seq in test_sequences]
 
-train_padded, train_labels = convert_to_padded_sequences(train_reviews, train_labels)
-test_padded, test_labels = convert_to_padded_sequences(test_reviews, test_labels)
+    train_padded = np.array(train_padded, dtype=np.int64)
+    test_padded  = np.array(test_padded,  dtype=np.int64)
 
-# ---------------------------------------
-# 4. DATASET & DATALOADER
-# ---------------------------------------
+    return train_padded, test_padded
+train_padded, test_padded = tokenize_pytorch()
+
+train_labels = np.array(train_labels, dtype=np.float32)
+test_labels  = np.array(test_labels,  dtype=np.float32)
+
+class SentimentModel(nn.Module):
+    def __init__(self, vocab_size, embed_dim, hidden_dim, output_dim):
+        super().__init__()
+        self.embedding = nn.Embedding(num_embeddings=vocab_size, 
+                                      embedding_dim=embed_dim,
+                                      padding_idx=word_to_idx[kerch.PAD])
+        self.lstm = nn.LSTM(embed_dim, hidden_dim, batch_first=True)
+        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        embedded = self.embedding(x)         
+        _, (hidden, _) = self.lstm(embedded) 
+        out = self.fc(hidden[-1])            
+        return self.sigmoid(out)
+
+def build_model():
+    embed_dim = 64
+    hidden_dim = 128
+    output_dim = 1
+
+    vocab_size = len(word_to_idx)
+    model = SentimentModel(vocab_size, embed_dim, hidden_dim, output_dim)
+    print(model)
+    return model
+
+model = build_model()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+
+criterion = nn.BCELoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
 class SentimentDataset(Dataset):
     def __init__(self, padded_data, labels):
         self.padded_data = padded_data
@@ -79,54 +94,28 @@ class SentimentDataset(Dataset):
         return len(self.labels)
 
     def __getitem__(self, idx):
-        review = torch.tensor(self.padded_data[idx], dtype=torch.long)
-        sentiment = torch.tensor(self.labels[idx], dtype=torch.float)
-        return review, sentiment
+        x = torch.tensor(self.padded_data[idx], dtype=torch.long)
+        y = torch.tensor(self.labels[idx], dtype=torch.float)
+        return x, y
 
-train_dataset = SentimentDataset(train_padded, train_labels)
-test_dataset = SentimentDataset(test_padded, test_labels)
+full_train_dataset = SentimentDataset(train_padded, train_labels)
+test_dataset       = SentimentDataset(test_padded,  test_labels)
 
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+def train_model():
+    epochs = 5
+    batch_size = 32
+    validation_split = 0.2
 
-# ---------------------------------------
-# 5. BUILD THE MODEL
-# ---------------------------------------
-class SentimentModel(nn.Module):
-    def __init__(self, vocab_size, embed_dim, hidden_dim, output_dim):
-        super().__init__()
-        self.embedding = nn.Embedding(num_embeddings=vocab_size,
-                                      embedding_dim=embed_dim,
-                                      padding_idx=word_to_idx["<PAD>"])
-        self.lstm = nn.LSTM(embed_dim, hidden_dim, batch_first=True)
-        self.fc = nn.Linear(hidden_dim, output_dim)
-        self.sigmoid = nn.Sigmoid()
+    dataset_size = len(full_train_dataset)
+    val_size = int(validation_split * dataset_size)
+    train_size = dataset_size - val_size
 
-    def forward(self, x):
-        embedded = self.embedding(x)            # (batch_size, seq_len, embed_dim)
-        _, (hidden, _) = self.lstm(embedded)    # hidden shape: (num_layers, batch_size, hidden_dim)
-        out = self.fc(hidden[-1])               # Take last layer's hidden
-        return self.sigmoid(out)
+    train_subset, val_subset = random_split(full_train_dataset, [train_size, val_size])
 
-vocab_size = len(word_to_idx)
-embed_dim = 64
-hidden_dim = 128
-output_dim = 1
+    train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
+    val_loader   = DataLoader(val_subset,   batch_size=batch_size, shuffle=False)
 
-model = SentimentModel(vocab_size, embed_dim, hidden_dim, output_dim)
-print(model)
-
-# ---------------------------------------
-# 6. TRAIN THE MODEL
-# ---------------------------------------
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-
-criterion = nn.BCELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-def train_model(epochs=5):
-    for epoch in range(epochs):
+    for epoch in range(1, epochs + 1):
         model.train()
         total_loss = 0
         for reviews, sentiments in train_loader:
@@ -137,16 +126,35 @@ def train_model(epochs=5):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+
         avg_train_loss = total_loss / len(train_loader)
 
-        # Validation
-        val_loss, val_acc = evaluate_model()
-        print(f"Epoch {epoch+1}/{epochs}, "
+        model.eval()
+        val_loss = 0
+        correct  = 0
+        with torch.no_grad():
+            for reviews, sentiments in val_loader:
+                reviews, sentiments = reviews.to(device), sentiments.to(device)
+                outputs = model(reviews).squeeze()
+                loss = criterion(outputs, sentiments)
+                val_loss += loss.item()
+
+                preds = (outputs > 0.5).float()
+                correct += (preds == sentiments).sum().item()
+
+        avg_val_loss = val_loss / len(val_loader)
+        val_acc = correct / len(val_subset)
+
+        print(f"Epoch {epoch}/{epochs}, "
               f"Train Loss: {avg_train_loss:.4f}, "
-              f"Val Loss: {val_loss:.4f}, "
+              f"Val Loss: {avg_val_loss:.4f}, "
               f"Val Accuracy: {val_acc:.4f}")
 
-def evaluate_model():
+train_model()
+
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+def prediction():
     model.eval()
     total_loss = 0
     correct = 0
@@ -156,30 +164,24 @@ def evaluate_model():
             outputs = model(reviews).squeeze()
             loss = criterion(outputs, sentiments)
             total_loss += loss.item()
-
             preds = (outputs > 0.5).float()
             correct += (preds == sentiments).sum().item()
 
-    avg_loss = total_loss / len(test_loader)
-    accuracy = correct / len(test_loader.dataset)
-    return avg_loss, accuracy
+    avg_test_loss = total_loss / len(test_loader)
+    test_acc = correct / len(test_loader.dataset)
+    print(f"Test Loss: {avg_test_loss:.4f}")
+    print(f"Test Accuracy: {test_acc:.4f}")
 
-train_model(epochs=5)
-
-# ---------------------------------------
-# 7. MAKE PREDICTIONS
-# ---------------------------------------
-def predict_sentiment(text):
-    model.eval()
-    with torch.no_grad():
-        # Clean & convert text
+    def predict_sentiment(text):
         text_cleaned = kerch.clean_text(text)
         tokens = tokenize(text_cleaned)
-        padded_tokens = pad_sequence(tokens, max_len)
-        # Convert to tensor
+        padded_tokens = pad_sequence(tokens)
         input_tensor = torch.tensor([padded_tokens], dtype=torch.long).to(device)
-        output = model(input_tensor).item()
+        with torch.no_grad():
+            output = model(input_tensor).item()
         return "Positive" if output > 0.5 else "Negative"
 
-print("Prediction:", predict_sentiment("The hotel was fantastic!"))
-print("Prediction:", predict_sentiment("The room was dirty and the service was terrible."))
+    print(predict_sentiment("The hotel was fantastic!"))
+    print(predict_sentiment("The room was dirty and the service was terrible."))
+
+prediction()

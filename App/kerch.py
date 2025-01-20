@@ -4,6 +4,13 @@ import numpy as np
 import data
 import col
 
+from sklearn.model_selection import train_test_split
+
+PAD = "<PAD>"
+UNK = "<UNK>"
+MAX_VOCAB_SIZE = 10000
+MAX_LEN = 100
+
 def isolate_sentiment_columns():
     df = data.df
 
@@ -18,3 +25,11 @@ def clean_text(text):
     text = re.sub(r"[^a-zA-Z0-9\s]", "", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+def separate_training_testing(df):
+    train_data, test_data = train_test_split(df, test_size=0.2, random_state=42)
+    train_reviews = train_data['Review'].tolist()
+    train_labels = np.array(train_data['Sentiment'].tolist())
+    test_reviews = test_data['Review'].tolist()
+    test_labels = np.array(test_data['Sentiment'].tolist())
+    return train_reviews, train_labels, test_reviews, test_labels
