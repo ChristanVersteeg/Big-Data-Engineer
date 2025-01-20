@@ -41,15 +41,12 @@ def build_model():
 model = build_model()
 
 def train_model():
-    epochs = 5
-    batch_size = 32
-
     model.fit(
         train_padded,
         train_labels,
-        epochs=epochs,
-        batch_size=batch_size,
-        validation_split=0.2,
+        epochs=kerch.EPOCHS,
+        batch_size=kerch.BATCH_SIZE,
+        validation_split=kerch.VALIDATION_SPLIT,
         verbose=1
     )
 train_model()

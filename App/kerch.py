@@ -10,6 +10,11 @@ PAD = "<PAD>"
 UNK = "<UNK>"
 MAX_VOCAB_SIZE = 10000
 MAX_LEN = 100
+EMBED_DIM = 64
+HIDDEN_DIM = 128
+EPOCHS = 5
+BATCH_SIZE = 32
+VALIDATION_SPLIT = 0.2
 
 def isolate_sentiment_columns():
     df = data.df
