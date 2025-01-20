@@ -110,7 +110,6 @@ def train_model():
     val_loader   = DataLoader(val_subset,   batch_size=kerch.BATCH_SIZE, shuffle=False)
 
     for epoch in range(1, kerch.EPOCHS + 1):
-        # Training
         model.train()
         total_loss = 0
         for reviews, sentiments in train_loader:
