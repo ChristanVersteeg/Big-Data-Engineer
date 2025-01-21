@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, random_split
 import data
-import pandas as pd
+import col
 
 import kerch
 
@@ -174,12 +174,16 @@ def prediction():
         padded_tokens = pad_sequence(tokens)
         input_tensor = torch.tensor([padded_tokens], dtype=torch.long).to(device)
         with torch.no_grad():
-            output = model(input_tensor).item()
-        return "Positive" if output > 0.5 else "Negative"
+            prediction = model(input_tensor).item()
+        return prediction, "Positive" if prediction > 0.5 else "Negative"
 
-    p1 = predict_sentiment("The hotel was fantastic!")
-    p2 = predict_sentiment("The room was dirty and the service was terrible.")
-    
-    df_preds = pd.DataFrame({"Prediction": [p1, p2]})
-    data.upload(df_preds, "Torch")
+    data.sample = kerch.isolate_sentiment_columns(data.sample)
+    for i, row in data.sample.iterrows():
+        score, sentiment = predict_sentiment(row['Review'])
+        data.sample.at[i, col.REVIEWER_SCORE] = score * 10
+        if sentiment == kerch.POSITIVE:
+            data.sample.at[i, col.POSITIVE_REVIEW] = row['Review']
+        else:
+            data.sample.at[i, col.NEGATIVE_REVIEW] = row['Review']
+    data.upload(data.sample, "Torch")
 prediction()
