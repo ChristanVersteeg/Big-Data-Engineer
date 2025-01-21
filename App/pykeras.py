@@ -1,15 +1,21 @@
+import dask.dataframe as dd
 import tensorflow as tf
 from keras_preprocessing.text import Tokenizer
 from keras_preprocessing.sequence import pad_sequences
 from keras import layers
 import data
-import pandas as pd
 import col
-
 import kerch
 
-df = kerch.isolate_sentiment_columns(data.df)
-df['Review'] = df['Review'].apply(kerch.clean_text)
+df_dd = dd.from_pandas(data.df, npartitions=4)
+df_dd[col.REVIEW] = df_dd[col.REVIEW].fillna('')
+df_dd[col.REVIEW] = df_dd[col.REVIEW].apply(
+    kerch.clean_text,
+    meta=(col.REVIEW, 'object')
+)
+df = df_dd.compute()
+df = kerch.isolate_sentiment_columns(df)
+
 train_reviews, train_labels, test_reviews, test_labels = kerch.separate_training_testing(df)
 
 def tokenize():

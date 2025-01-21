@@ -20,7 +20,7 @@ NEGATIVE = "Negative"
 
 def isolate_sentiment_columns(panda):
     df = panda
-
+    df[col.NEGATIVE_REVIEW] = df[col.NEGATIVE_REVIEW].fillna('')
     df['Sentiment'] = np.where(df[col.NEGATIVE_REVIEW].str.strip() == 'No Negative', 1, 0)
     df['Review'] = df[col.POSITIVE_REVIEW].fillna('') + ' ' + df[col.NEGATIVE_REVIEW].fillna('')
     df = df[['Review', 'Sentiment']].dropna()

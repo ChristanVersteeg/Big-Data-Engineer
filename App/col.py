@@ -17,6 +17,8 @@ DAYS_SINCE_REVIEW = 'days_since_review'
 LAT = 'lat'
 LNG = 'lng'
 
+REVIEW = 'Review'
+
 included_columns = [
     #ID, 
     #HOTEL_ADDRESS, 
