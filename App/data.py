@@ -2,13 +2,21 @@ from pymongo import MongoClient
 import pandas as pd
 
 db_driven = True
+keras = False
+torch = False
 
 if db_driven:
     client = MongoClient("localhost", 27017)
     db = client['Big']
-    collection = db['Data']
     
+    if(keras):
+        collection = db['Keras']
+    elif(torch):
+        collection = db['Torch']
+    else:
+        collection = db['Data']
     df = pd.DataFrame(list(collection.find().limit(10000)))
+    sample = pd.DataFrame(list(collection.aggregate([{"$sample": {"size": 100}}])))
     
     client.close()
 else:

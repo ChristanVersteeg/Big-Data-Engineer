@@ -8,7 +8,7 @@ import pandas as pd
 
 import kerch
 
-df = kerch.isolate_sentiment_columns()
+df = kerch.isolate_sentiment_columns(data.df)
 df['Review'] = df['Review'].apply(kerch.clean_text)
 train_reviews, train_labels, test_reviews, test_labels = kerch.separate_training_testing(df)
 

@@ -4,11 +4,11 @@ from keras_preprocessing.sequence import pad_sequences
 from keras import layers
 import data
 import pandas as pd
+import col
 
 import kerch
 
-
-df = kerch.isolate_sentiment_columns()
+df = kerch.isolate_sentiment_columns(data.df)
 df['Review'] = df['Review'].apply(kerch.clean_text)
 train_reviews, train_labels, test_reviews, test_labels = kerch.separate_training_testing(df)
 
@@ -25,11 +25,9 @@ def tokenize():
 tokenizer, train_padded, test_padded = tokenize()
 
 def build_model():
-    embed_dim = 64
-    hidden_dim = 128
     model = tf.keras.Sequential([
-        layers.Embedding(input_dim=kerch.MAX_VOCAB_SIZE, output_dim=embed_dim, input_length=kerch.MAX_LEN),
-        layers.LSTM(hidden_dim),
+        layers.Embedding(input_dim=kerch.MAX_VOCAB_SIZE, output_dim=kerch.EMBED_DIM, input_length=kerch.MAX_LEN),
+        layers.LSTM(kerch.HIDDEN_DIM),
         layers.Dense(1, activation='sigmoid')
     ])
 
@@ -64,11 +62,15 @@ def prediction():
         seq = tokenizer.texts_to_sequences([text_cleaned])
         padded = pad_sequences(seq, maxlen=kerch.MAX_LEN, padding='post', truncating='post')
         prediction = model.predict(padded)[0][0]
-        return "Positive" if prediction > 0.5 else "Negative"
+        return prediction, kerch.POSITIVE if prediction > 0.5 else kerch.NEGATIVE
 
-    p1 = predict_sentiment("The hotel was fantastic!")
-    p2 = predict_sentiment("The room was dirty and the service was terrible.")
-
-    df_preds = pd.DataFrame({"Prediction": [p1, p2]})
-    data.upload(df_preds, "Keras")
+    data.sample = kerch.isolate_sentiment_columns(data.sample)
+    for i, row in data.sample.iterrows():
+        score, sentiment = predict_sentiment(row['Review'])
+        data.sample.at[i, col.REVIEWER_SCORE] = score * 10
+        if sentiment == kerch.POSITIVE:
+            data.sample.at[i, col.POSITIVE_REVIEW] = row['Review']
+        else:
+            data.sample.at[i, col.NEGATIVE_REVIEW] = row['Review']
+    data.upload(data.sample, "Keras")
 prediction()

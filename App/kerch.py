@@ -15,9 +15,11 @@ HIDDEN_DIM = 128
 EPOCHS = 5
 BATCH_SIZE = 32
 VALIDATION_SPLIT = 0.2
+POSITIVE = "Positive"
+NEGATIVE = "Negative"
 
-def isolate_sentiment_columns():
-    df = data.df
+def isolate_sentiment_columns(panda):
+    df = panda
 
     df['Sentiment'] = np.where(df[col.NEGATIVE_REVIEW].str.strip() == 'No Negative', 1, 0)
     df['Review'] = df[col.POSITIVE_REVIEW].fillna('') + ' ' + df[col.NEGATIVE_REVIEW].fillna('')

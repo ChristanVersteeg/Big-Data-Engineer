@@ -5,8 +5,8 @@ import numpy as np
 import streamlit as st
 
 def draw_positive_negative():
-    num_positive = data.df[col.POSITIVE_REVIEW].shape[0]
-    num_negative = data.df[col.NEGATIVE_REVIEW].shape[0]
+    num_positive = data.df[col.POSITIVE_REVIEW].notna().sum()
+    num_negative = data.df[col.NEGATIVE_REVIEW].notna().sum()
 
     labels = ['Positive Reviews', 'Negative Reviews']
     sizes = [num_positive, num_negative]
