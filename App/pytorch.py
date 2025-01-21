@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, random_split
+import data
+import pandas as pd
 
 import kerch
 
@@ -175,6 +177,9 @@ def prediction():
             output = model(input_tensor).item()
         return "Positive" if output > 0.5 else "Negative"
 
-    print(predict_sentiment("The hotel was fantastic!"))
-    print(predict_sentiment("The room was dirty and the service was terrible."))
+    p1 = predict_sentiment("The hotel was fantastic!")
+    p2 = predict_sentiment("The room was dirty and the service was terrible.")
+    
+    df_preds = pd.DataFrame({"Prediction": [p1, p2]})
+    data.upload(df_preds, "Torch")
 prediction()

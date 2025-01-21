@@ -2,8 +2,11 @@ import tensorflow as tf
 from keras_preprocessing.text import Tokenizer
 from keras_preprocessing.sequence import pad_sequences
 from keras import layers
+import data
+import pandas as pd
 
 import kerch
+
 
 df = kerch.isolate_sentiment_columns()
 df['Review'] = df['Review'].apply(kerch.clean_text)
@@ -63,6 +66,9 @@ def prediction():
         prediction = model.predict(padded)[0][0]
         return "Positive" if prediction > 0.5 else "Negative"
 
-    print(predict_sentiment("The hotel was fantastic!"))
-    print(predict_sentiment("The room was dirty and the service was terrible."))
+    p1 = predict_sentiment("The hotel was fantastic!")
+    p2 = predict_sentiment("The room was dirty and the service was terrible.")
+
+    df_preds = pd.DataFrame({"Prediction": [p1, p2]})
+    data.upload(df_preds, "Keras")
 prediction()
